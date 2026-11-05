@@ -20,7 +20,13 @@ for(const map of ['Тихий погост','Чёрный лес'])test(`охо�
 test('касание уничтожает демона, благодать активируется',async({page})=>{
  test.setTimeout(120000);await page.goto('/');await page.getByRole('button',{name:/НАЧАТЬ ОХОТУ/}).click();
  await expect(async()=>{await page.keyboard.press('e');await expect(page.locator('#touch-status')).toContainText('Восстановление',{timeout:100});}).toPass({timeout:90000,intervals:[500]});
- await expect(page.locator('#score')).not.toContainText('Изгнано 0 /');
+ await expect(page.locator('#touch')).toHaveAttribute('aria-busy','true');
+ await expect(page.locator('#score')).toContainText('Изгнано 0 /');
+ await page.keyboard.press('Escape');const health=await page.locator('#hp').textContent();
+ await page.waitForTimeout(300);await expect(page.locator('#score')).toContainText('Изгнано 0 /');expect(await page.locator('#hp').textContent()).toBe(health);
+ await page.keyboard.press('Escape');
+ await expect(page.locator('#score')).not.toContainText('Изгнано 0 /',{timeout:30000});
+ await expect(page.locator('#touch')).toHaveAttribute('aria-busy','false',{timeout:20000});
  await page.keyboard.press('q');await expect(page.locator('#grace-status')).toContainText('Восстановление');
- await page.screenshot({path:'test-results/gameplay.png'});
+ await expect(page.locator('#toast')).toHaveText('Сияние благодати',{timeout:15000});await page.screenshot({path:'test-results/gameplay.png'});
 });
