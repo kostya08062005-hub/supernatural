@@ -41,17 +41,26 @@ export function shadowWings(){
  root.userData.material=material;return root;
 }
 export function makeArm(coat,skin){const arm=new THREE.Group();
- const upper=new THREE.Mesh(new THREE.CapsuleGeometry(.125,.25,4,10),coat);
- const fore=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.25,4,10),coat);
- const hand=new THREE.Group();const palm=new THREE.Mesh(new THREE.SphereGeometry(.105,10,8),skin);palm.scale.set(.85,1.1,.5);hand.add(palm);
- for(let i=0;i<4;i++){const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.018,.105,3,5),skin);finger.position.set((i-1.5)*.043,-.12,0);hand.add(finger);}
- arm.add(upper,fore,hand);arm.traverse(o=>{o.castShadow=true;});arm.userData={upper,fore,hand};poseArm(arm,new THREE.Vector3(0,-.83,.03));return arm;
+ const upper=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.29,8,18),coat);
+ const fore=new THREE.Mesh(new THREE.CapsuleGeometry(.086,.328,8,18),coat);
+ const elbow=new THREE.Mesh(new THREE.SphereGeometry(.087,14,10),coat);
+ const hand=new THREE.Group();const palm=new THREE.Mesh(new THREE.SphereGeometry(1,18,14),skin);palm.scale.set(.039,.054,.021);hand.add(palm);
+ const nailMat=new THREE.MeshStandardMaterial({color:0xcba996,roughness:.52});
+ for(let i=0;i<4;i++){const x=(i-1.5)*.021,length=[.078,.095,.089,.068][i];
+  for(let j=0;j<3;j++){const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.009-j*.0008,length/3-.014,4,8),skin);finger.position.set(x,-.045-(j+.5)*length/3,.004+j*.003);finger.rotation.x=-j*.12;hand.add(finger);}
+  const nail=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),nailMat);nail.scale.set(.006,.012,.0015);nail.position.set(x,-.043-length,.015);hand.add(nail);
+ }
+ for(let j=0;j<2;j++){const thumb=new THREE.Mesh(new THREE.CapsuleGeometry(.012,.018,4,8),skin);thumb.position.set(-.045-j*.014,-.012-j*.027,0);thumb.rotation.z=-.55;hand.add(thumb);}
+ const cuff=new THREE.Mesh(new THREE.CylinderGeometry(.09,.087,.045,18),coat);cuff.position.y=-.21;fore.add(cuff);
+ const buttons=new THREE.MeshStandardMaterial({color:0x382e25,roughness:.6});
+ for(let i=0;i<3;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(.009,8,6),buttons);b.scale.z=.4;b.position.set(.056,-.14+i*.04,.069);fore.add(b);}
+ arm.add(upper,fore,hand,elbow);arm.traverse(o=>{o.castShadow=true;o.receiveShadow=true;});arm.userData={upper,fore,hand,elbow};poseArm(arm,new THREE.Vector3(0,-.83,.03));return arm;
 }
-export function poseArm(arm,end){const {upper,fore,hand}=arm.userData;
+export function poseArm(arm,end){const {upper,fore,hand,elbow}=arm.userData;
  const reach=end.clone();if(reach.length()>.95)reach.setLength(.95);
  const mid=reach.clone().multiplyScalar(.5);mid.z-=Math.sqrt(Math.max(0,.48**2-reach.lengthSq()/4));
  const segment=(o,a,b)=>{o.position.copy(a).add(b).multiplyScalar(.5);o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());o.scale.y=a.distanceTo(b)/.5;};
- segment(upper,new THREE.Vector3(),mid);segment(fore,mid,reach);hand.position.copy(reach);hand.rotation.x=reach.y>0?-Math.PI/2:0;
+ if(elbow)elbow.position.copy(mid);segment(upper,new THREE.Vector3(),mid);segment(fore,mid,reach);hand.position.copy(reach);hand.rotation.x=reach.y>0?-Math.PI/2:0;
 }
 
 export function dressWorld(world){
