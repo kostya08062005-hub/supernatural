@@ -5,6 +5,10 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 export function postprocessing(renderer,scene,camera){
+ const basic = new URLSearchParams(location.search).get('graphics') === 'basic';
+ if (basic || !renderer.extensions.has('EXT_color_buffer_float')) {
+  return {render:()=>renderer.render(scene,camera),setSize:()=>{},basic:true};
+ }
  const composer=new EffectComposer(renderer);
  composer.addPass(new RenderPass(scene,camera));
  const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.85,.65,1.15);

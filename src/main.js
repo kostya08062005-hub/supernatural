@@ -5,13 +5,14 @@ import { postprocessing, surface, shadowWings, makeArm, poseArm, radiance, dress
 const app=document.querySelector('#app'),canvas=document.querySelector('#world');
 let renderer;
 try { renderer=new THREE.WebGLRenderer({canvas,antialias:true}); } catch { app.innerHTML='<div class="error">Для игры нужен браузер с WebGL 2 и включённым аппаратным ускорением.</div>'; throw new Error('WebGL unavailable'); }
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.95;
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.95;
 const scene=new THREE.Scene();scene.background=new THREE.Color('#101b26');scene.fog=new THREE.FogExp2('#101b26',.019);
 const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.1,180);
 scene.add(new THREE.HemisphereLight(0x91a9b6,0x272215,.8));
 const moon=new THREE.DirectionalLight(0xbfdcf5,2.5);moon.position.set(12,22,8);moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);Object.assign(moon.shadow.camera,{left:-45,right:45,top:45,bottom:-45});scene.add(moon);
 const rim=new THREE.PointLight(0x7abfff,35,25);rim.position.set(0,3,-4);scene.add(rim);
 const composer=postprocessing(renderer,scene,camera);
+canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();const error=new Error('Графический контекст WebGL потерян. Попробуйте облегчённую графику.');window.dispatchEvent(new ErrorEvent('error',{error,message:error.message}));});
 const earthTexture=surface('earth'),stoneTexture=surface('stone'),woodTexture=surface('wood');
 const world=new THREE.Group();scene.add(world);
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.83,...extra});
