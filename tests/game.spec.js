@@ -1,0 +1,26 @@
+import {test,expect} from '@playwright/test';
+for(const map of ['Тихий погост','Чёрный лес'])test(`охота: ${map}`,async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/');await expect(page.locator('h1')).toHaveText('Последняяблагодать');
+ await page.getByRole('button',{name:new RegExp(map)}).click();
+ await page.getByRole('button',{name:/НАЧАТЬ ОХОТУ/}).click();
+ await expect(page.locator('#score')).toContainText('Изгнано 0 / 15');
+ await page.keyboard.press('e');await expect(page.locator('#toast')).toContainText('Подойдите');
+ const before=await page.locator('canvas').screenshot();
+ await page.keyboard.down('KeyW');await page.waitForTimeout(600);await page.keyboard.up('KeyW');
+ const after=await page.locator('canvas').screenshot();expect(before.equals(after)).toBe(false);
+ await page.keyboard.press('q');await expect(page.locator('#grace-status')).toContainText('Восстановление');
+ await page.keyboard.press('Escape');await expect(page.getByRole('heading',{name:'Тишина перед бурей'})).toBeVisible();
+ const cd=await page.locator('#grace-status').textContent();await page.waitForTimeout(250);expect(await page.locator('#grace-status').textContent()).toBe(cd);
+ await page.getByRole('button',{name:'Продолжить'}).click();
+ await expect(page.locator('.pause')).toHaveCount(0);await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:'Выбор персонажа и карты'}).click();await expect(page.locator('h1')).toBeVisible();
+ expect(errors).toEqual([]);
+});
+test('касание уничтожает демона, благодать активируется',async({page})=>{
+ test.setTimeout(120000);await page.goto('/');await page.getByRole('button',{name:/НАЧАТЬ ОХОТУ/}).click();
+ await expect(async()=>{await page.keyboard.press('e');await expect(page.locator('#touch-status')).toContainText('Восстановление',{timeout:100});}).toPass({timeout:90000,intervals:[500]});
+ await expect(page.locator('#score')).not.toContainText('Изгнано 0 /');
+ await page.keyboard.press('q');await expect(page.locator('#grace-status')).toContainText('Восстановление');
+ await page.screenshot({path:'test-results/gameplay.png'});
+});
