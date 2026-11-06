@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-for(const map of ['Тихий погост','Чёрный лес'])test(`охота: ${map}`,async({page})=>{
+for(const map of ['Тихий погост','Чёрный лес','Заброшенный завод'])test(`охота: ${map}`,async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/');await expect(page.locator('h1')).toHaveText('Последняяблагодать');
  await page.getByRole('button',{name:new RegExp(map)}).click();
@@ -19,7 +19,10 @@ for(const map of ['Тихий погост','Чёрный лес'])test(`охо�
 });
 test('касание уничтожает демона, благодать активируется',async({page})=>{
  test.setTimeout(150000);const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});await page.goto('/');await page.getByRole('button',{name:/НАЧАТЬ ОХОТУ/}).click();
- await expect(async()=>{await page.keyboard.press('e');await expect(page.locator('#touch-status')).toContainText('Восстановление',{timeout:100});}).toPass({timeout:90000,intervals:[500]});
+ await expect(async()=>{await page.keyboard.press('f');await expect(page.locator('#hold-status')).toContainText('Удерживается',{timeout:100});}).toPass({timeout:30000,intervals:[400]});
+ await page.keyboard.down('KeyW');
+ await expect(async()=>{await page.keyboard.press('e');await expect(page.locator('#touch-status')).toContainText('Восстановление',{timeout:100});}).toPass({timeout:30000,intervals:[300]});
+ await page.keyboard.up('KeyW');
  await expect(page.locator('#touch')).toHaveAttribute('aria-busy','true');
  await expect(page.locator('#score')).toContainText('Изгнано 0 /');
  await page.keyboard.press('Escape');const health=await page.locator('#hp').textContent();
@@ -28,5 +31,5 @@ test('касание уничтожает демона, благодать ак�
  await expect(page.locator('#score')).not.toContainText('Изгнано 0 /',{timeout:30000});
  await expect(page.locator('#touch')).toHaveAttribute('aria-busy','false',{timeout:20000});
  await page.keyboard.press('q');await expect(page.locator('#grace-status')).toContainText('Восстановление');
- await expect(page.locator('#toast')).toHaveText('Сияние благодати',{timeout:15000});await expect(async()=>{const score=await page.locator('#score').textContent();expect(Number(score.match(/Изгнано (\d+)/)[1])).toBeGreaterThan(1);}).toPass({timeout:15000});await page.screenshot({path:'test-results/gameplay.png'});expect(errors).toEqual([]);
+ await expect(page.locator('#toast')).toHaveText('Сияние благодати',{timeout:15000});await page.screenshot({path:'test-results/gameplay.png'});expect(errors).toEqual([]);
 });

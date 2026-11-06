@@ -20,8 +20,8 @@ function weave(color) {
  const map=new THREE.CanvasTexture(c);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.repeat.set(5,8);map.colorSpace=THREE.SRGBColorSpace;
  return new THREE.MeshStandardMaterial({map,roughness:.91,bumpMap:map,bumpScale:.0007,side:THREE.DoubleSide});
 }
-const coat=weave('#b0a087'),suit=weave('#272f39'),shirt=weave('#dad7cc'),tieMat=weave('#253e61');
-const leather=new THREE.MeshStandardMaterial({color:0x17191c,roughness:.42});
+const coat=weave('#99988b'),suit=weave('#272f39'),shirt=weave('#dad7cc'),tieMat=weave('#253e61');
+const leather=new THREE.MeshStandardMaterial({color:0x17191c,roughness:.72});
 function add(parent,geometry,material,position=[0,0,0],scale=[1,1,1]) {const m=new THREE.Mesh(geometry,material);m.position.set(...position);m.scale.set(...scale);m.castShadow=m.receiveShadow=true;parent.add(m);return m;}
 function oval(parent,material,position,scale){return add(parent,new THREE.SphereGeometry(1,24,18),material,position,scale);}
 function seam(parent,coords,radius,material=stitch){return add(parent,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(coords.map(v=>new THREE.Vector3(...v))),Math.max(8,coords.length*5),radius,5,false),material);}
@@ -37,7 +37,7 @@ function interpolate(points,t){for(let i=1;i<points.length;i++){if(t<=points[i][
 function smoothSeam(g,rows,cols){const normal=g.attributes.normal;for(let j=0;j<=rows;j++){const a=j*(cols+1),b=a+cols;const n=new THREE.Vector3().fromBufferAttribute(normal,a).add(new THREE.Vector3().fromBufferAttribute(normal,b)).normalize();normal.setXYZ(a,n.x,n.y,n.z);normal.setXYZ(b,n.x,n.y,n.z);}}
 function skinDetail(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');let seed=1847;const data=x.createImageData(256,256);for(let i=0;i<data.data.length;i+=4){seed=(seed*1664525+1013904223)>>>0;const v=105+seed%45;data.data.set([v,v,v,255],i);}x.putImageData(data,0,0);const map=new THREE.CanvasTexture(c);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.repeat.set(5,5);return map;}
 const headSkin=skin.clone();headSkin.vertexColors=true;headSkin.bumpMap=skinDetail();headSkin.bumpScale=.00013;
-function sculptHead(){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(headData.position,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(headData.uv,2));g.setIndex(headData.index);g.computeVertexNormals();const colors=[];for(let i=0;i<headData.position.length;i+=3){const x=headData.position[i],y=headData.position[i+1],z=headData.position[i+2];const front=THREE.MathUtils.smoothstep(z,.06,.11);const lips=Math.exp(-Math.pow(x/.037,4)-Math.pow((y+.061)/.010,4))*front;const beard=Math.exp(-Math.pow((y+.105)/.034,2))*front*.065;const cheek=Math.exp(-Math.pow((Math.abs(x)-.072)/.03,2)-Math.pow((y+.012)/.027,2))*front;colors.push(1-beard-lips*.12,1-beard-lips*.25-cheek*.04,1-beard-lips*.23-cheek*.035);}g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));return g;}
+function sculptHead(){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(headData.position.map((v,i)=>{const y=headData.position[i-i%3+1];if(i%3===0)return v*(1+.04*Math.exp(-Math.pow((y+.085)/.04,2)));if(i%3===2&&v>.08)return v+.003*Math.exp(-Math.pow((y-.064)/.025,2));return v;}),3));g.setAttribute('uv',new THREE.Float32BufferAttribute(headData.uv,2));const indices=[];for(let j=0;j<headData.index.length;j+=3){const triangle=headData.index.slice(j,j+3);if(triangle.every(v=>headData.position[v*3+1]>-.11||headData.position[v*3+2]>.10))indices.push(...triangle);}g.setIndex(indices);g.computeVertexNormals();const colors=[];for(let i=0;i<headData.position.length;i+=3){const x=headData.position[i],y=headData.position[i+1],z=headData.position[i+2];const front=THREE.MathUtils.smoothstep(z,.06,.11);const lips=Math.exp(-Math.pow(x/.037,4)-Math.pow((y+.061)/.010,4))*front;const beard=Math.exp(-Math.pow((y+.105)/.034,2))*front*.065;const cheek=Math.exp(-Math.pow((Math.abs(x)-.072)/.03,2)-Math.pow((y+.012)/.027,2))*front;colors.push(1-beard-lips*.12,1-beard-lips*.25-cheek*.04,1-beard-lips*.23-cheek*.035);}g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));return g;}
 function irisTexture(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.fillStyle='#263e4b';x.fillRect(0,0,128,128);for(let i=0;i<180;i++){const a=i*Math.PI*2/180;x.strokeStyle=i%3?'#718f9b':'#405f6d';x.lineWidth=1;x.beginPath();x.moveTo(64+Math.cos(a)*15,64+Math.sin(a)*15);x.lineTo(64+Math.cos(a)*57,64+Math.sin(a)*57);x.stroke();}const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;}
 function face(parent){
  const skinMesh=add(parent,sculptHead(),headSkin);skinMesh.name='anatomical-head';
@@ -53,19 +53,19 @@ function face(parent){
  }
  // Short, irregular hair with a side part; all locks are merged into two draw calls.
  const scalp=new THREE.BufferGeometry(),p=[],uv=[],idx=[];const n=80,m=40;
- const hairCandidates=[];for(let i=0;i<headData.position.length;i+=3)if(headData.position[i+1]>-.04)hairCandidates.push(headData.position[i],headData.position[i+1],headData.position[i+2]);
+ const hairCandidates=[];for(let i=0;i<headData.position.length;i+=3)if(headData.position[i+1]>-.04)hairCandidates.push(headData.position[i],headData.position[i+1],headData.position[i+2],Math.atan2(headData.position[i],headData.position[i+2]+.005));
  function hairPoint(a,b){const y=.045+Math.cos(b)*.18;let best=null,bestScore=Infinity;const desiredAngle=a>Math.PI?a-Math.PI*2:a;
- for(let i=0;i<hairCandidates.length;i+=3){const x=hairCandidates[i],yy=hairCandidates[i+1],z=hairCandidates[i+2];let angle=Math.atan2(x,z+.005),diff=Math.abs(angle-desiredAngle);diff=Math.min(diff,Math.PI*2-diff);const score=(yy-y)**2+diff**2*.004;if(score<bestScore){bestScore=score;best=[x,yy,z];}}
- return [best[0]*1.035,best[1]+.006,best[2]*1.035];}
+ for(let i=0;i<hairCandidates.length;i+=4){const x=hairCandidates[i],yy=hairCandidates[i+1],z=hairCandidates[i+2];let angle=hairCandidates[i+3],diff=Math.abs(angle-desiredAngle);diff=Math.min(diff,Math.PI*2-diff);const score=(yy-y)**2+diff**2*.004;if(score<bestScore){bestScore=score;best=[x,yy,z];}}
+ const front=Math.max(0,Math.cos(a));return [best[0]*1.035,best[1]+.006+front*.018*Math.sin(b),best[2]*1.035];}
  for(let j=0;j<=m;j++)for(let i=0;i<=n;i++){const a=i/n*Math.PI*2,edge=1.65-.50*Math.cos(a);const b=.025+j/m*edge;p.push(...hairPoint(a,b));uv.push(i/n,j/m);if(i<n&&j<m){const v=j*(n+1)+i;idx.push(v,v+n+1,v+1,v+1,v+n+1,v+n+2);}}
  scalp.setAttribute('position',new THREE.Float32BufferAttribute(p,3));scalp.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));scalp.setIndex(idx);scalp.computeVertexNormals();smoothSeam(scalp,m,n);add(parent,scalp,hair);
- for(let i=0;i<380;i++){const a=i*2.39996,b=.1+((i*37)%100)/100*(1.65-.50*Math.cos(a));const [x,y,z]=hairPoint(a,b);const path=[[x,y+.001,z],[x+.005,y+.005,z-.002],[x+.012,y+.007,z-.007],[x+.018,y+.004,z-.012]];seam(parent,path,.0011+(i%3)*.0003,i%5?hair:hairLight);}
+ for(let i=0;i<380;i++){const a=i*2.39996,b=.1+((i*37)%100)/100*(1.65-.50*Math.cos(a));const [x,y,z]=hairPoint(a,b);const lift=.006+(i%5)*.0018;const path=[[x,y+.001,z],[x+.005,y+lift,z-.002],[x+.012,y+lift*.9,z-.007],[x+.018,y+.004,z-.012]];seam(parent,path,.0011+(i%3)*.0003,i%5?hair:hairLight);}
  batch(parent);return eyes;
 }
 function trench(parent){
  const p=[],uv=[],idx=[],rows=42,cols=80;
- for(let j=0;j<=rows;j++){const t=j/rows,y=.48+t*1.26;const rx=interpolate([[0,.405],[.35,.32],[.6,.275],[.83,.34],[1,.35]],t),rz=interpolate([[0,.205],[.5,.174],[1,.188]],t);const opening=.34+(1-t)*.18;
- for(let i=0;i<=cols;i++){const a=opening+i/cols*(Math.PI*2-2*opening);const fold=(.002+.006*(1-t))*Math.sin(a*17+t*5)*Math.sin(t*Math.PI);p.push((rx+fold)*Math.sin(a),y+.004*Math.cos(a*8)*(1-t),(rz+fold)*Math.cos(a)-.017);uv.push(i/cols*3,t*2);if(j<rows&&i<cols){const v=j*(cols+1)+i;idx.push(v,v+cols+1,v+1,v+1,v+cols+1,v+cols+2);}}}
+ for(let j=0;j<=rows;j++){const t=j/rows,y=.61+t*1.13;const rx=interpolate([[0,.335],[.35,.295],[.6,.275],[.83,.325],[1,.33]],t),rz=interpolate([[0,.175],[.5,.17],[1,.178]],t);const opening=.23+(1-t)*.13;
+ for(let i=0;i<=cols;i++){const a=opening+i/cols*(Math.PI*2-2*opening);const fold=(.002+.003*(1-t))*Math.sin(a*17+t*5)*Math.sin(t*Math.PI);p.push((rx+fold)*Math.sin(a),y+.004*Math.cos(a*8)*(1-t),(rz+fold)*Math.cos(a)-.017);uv.push(i/cols*3,t*2);if(j<rows&&i<cols){const v=j*(cols+1)+i;idx.push(v,v+cols+1,v+1,v+1,v+cols+1,v+cols+2);}}}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();add(parent,g,coat);
  for(const s of [-1,1]){
  panel(parent,[[s*.115,1.775,.143],[s*.28,1.72,.18],[s*.337,1.58,.18],[s*.17,1.31,.188],[s*.209,1.58,.221]],coat);
@@ -86,13 +86,14 @@ export function createCastiel(){
  const root=new THREE.Group();root.name='Castiel';const body=new THREE.Group();root.add(body);body.scale.x=.84;
  // Slim dark suit below the open trenchcoat.
  oval(body,suit,[0,1.36,-.015],[.25,.396,.164]);
- panel(body,[[-.125,1.80,.148],[.125,1.80,.148],[.105,1.16,.171],[-.105,1.16,.171]],shirt);
+ oval(body,skin,[0,1.70,.097],[.092,.13,.077]);
+ for(const side of [-1,1])panel(body,[[side*.125,1.80,.148],[side*.018,1.62,.175],[0,1.16,.171],[side*.105,1.16,.171]],shirt);
  for(const s of [-1,1]){
  panel(body,[[s*.106,1.742,.159],[s*.021,1.701,.185],[s*.072,1.61,.187],[s*.14,1.703,.156]],shirt);
  panel(body,[[s*.15,1.71,.154],[s*.256,1.59,.147],[s*.122,1.24,.177],[s*.069,1.54,.186]],suit);
  seam(body,[[s*.19,1.57,.161],[s*.11,1.31,.18]],.001,suit);
  }
- const tie=new THREE.Group();body.add(tie);tie.position.y=.075;
+ const tie=new THREE.Group();body.add(tie);tie.position.y=.075;tie.visible=false;
  panel(tie,[[-.026,1.664,.193],[.022,1.664,.193],[.016,1.608,.201],[-.019,1.61,.201]],tieMat);
  panel(tie,[[-.014,1.617,.195],[.014,1.617,.195],[.035,1.2,.189],[.004,1.155,.189],[-.027,1.2,.189]],tieMat);
  for(const y of [1.53,1.43,1.33])seam(tie,[[-.013,y,.198],[.02,y-.018,.198]],.0007,stitch);
@@ -104,10 +105,10 @@ export function createCastiel(){
  const head=new THREE.Group();head.position.set(0,1.965,0);root.add(head);const eyes=face(head);
  const legs=[];
  for(const s of [-1,1]){const leg=new THREE.Group();leg.position.set(s*.139,1.03,0);root.add(leg);
- const pants=add(leg,new THREE.CapsuleGeometry(.105,.73,8,20),suit,[0,-.43,0]);pants.scale.z=.94;
+ const pants=add(leg,new THREE.CapsuleGeometry(.105,.73,8,20),suit,[0,-.43,0]);pants.scale.z=.9;const pv=pants.geometry.attributes.position;for(let i=0;i<pv.count;i++){const y=pv.getY(i);pv.setZ(i,pv.getZ(i)+Math.sin(y*57)*.0025); }pants.geometry.computeVertexNormals();
  seam(leg,[[0,-.12,.103],[0,-.43,.098],[0,-.81,.095]],.0018,suit);
- const boot=oval(leg,leather,[0,-.94,.045],[.101,.067,.15]);
- oval(leg,leather,[0,-1.001,.045],[.103,.015,.153]);
+ const boot=oval(leg,leather,[0,-.94,.045],[.091,.058,.164]);
+ oval(leg,leather,[0,-1.001,.045],[.094,.012,.167]);
  for(let i=0;i<4;i++)seam(leg,[[-.03,-.91+i*.014,.123],[.03,-.905+i*.014,.122]],.002,button);
  batch(leg);legs.push(leg);}
  const arms=[];for(const s of [-1,1]){const arm=makeArm(coat,skin);arm.position.set(s*.285,1.68,0);root.add(arm);arms.push(arm);}
