@@ -7,7 +7,7 @@ export class HeroMotion {
   for(const child of [...player.children]){player.remove(child);child.position.y-=1.1;this.visual.add(child);}player.add(this.visual);
   this.reset();
  }
- reset(){this.yaw=Math.PI;this.pitch=.26;this.velocityY=0;this.teleportCD=0;this.rollCD=0;this.roll=null;this.invulnerable=0;this.player.position.y=0;this.visual.quaternion.identity();}
+ reset(){this.speedMultiplier=1;this.cameraDistance=5.8;this.yaw=Math.PI;this.pitch=.26;this.velocityY=0;this.teleportCD=0;this.rollCD=0;this.roll=null;this.invulnerable=0;this.player.position.y=0;this.visual.quaternion.identity();}
  look(dx,dy){this.yaw-=Math.max(-120,Math.min(120,dx))*.004;this.pitch=THREE.MathUtils.clamp(this.pitch+dy*.003,-.1,.9);}
  forward(){return new THREE.Vector3(-Math.sin(this.yaw),0,-Math.cos(this.yaw));}
  direction(){const k=this.keys;return new THREE.Vector3((k.has('KeyD')||k.has('ArrowRight')?1:0)-(k.has('KeyA')||k.has('ArrowLeft')?1:0),0,(k.has('KeyS')||k.has('ArrowDown')?1:0)-(k.has('KeyW')||k.has('ArrowUp')?1:0)).normalize().applyAxisAngle(new THREE.Vector3(0,1,0),this.yaw);}
@@ -23,9 +23,9 @@ export class HeroMotion {
  update(dt,blocked=false){this.teleportCD=Math.max(0,this.teleportCD-dt);this.rollCD=Math.max(0,this.rollCD-dt);this.invulnerable=Math.max(0,this.invulnerable-dt);
   if(!blocked)this.player.rotation.y=this.yaw+Math.PI;
   if(this.roll){const r=this.roll;r.time+=dt;const fraction=Math.min(1,r.time/.62);this.move(r.dir.x*dt*5.3,r.dir.z*dt*5.3);const axis=new THREE.Vector3(r.dir.z,0,-r.dir.x).applyAxisAngle(new THREE.Vector3(0,1,0),-this.player.rotation.y);this.visual.quaternion.setFromAxisAngle(axis,-Math.PI*2*fraction);if(fraction>=1){this.roll=null;this.visual.quaternion.identity();}}
-  else if(!blocked){const dir=this.direction();const speed=this.keys.has('ShiftLeft')?7:4.5;this.move(dir.x*dt*speed,dir.z*dt*speed);}
+  else if(!blocked){const dir=this.direction();const speed=(this.keys.has('ShiftLeft')?7:4.5)*this.speedMultiplier;this.move(dir.x*dt*speed,dir.z*dt*speed);}
   if(this.player.position.y>0||this.velocityY>0){this.velocityY-=16*dt;this.player.position.y=Math.max(0,this.player.position.y+this.velocityY*dt);if(this.player.position.y===0)this.velocityY=0;}
  }
  get state(){return this.roll?'Перекат':this.grounded?'На земле':'Прыжок';}
- cameraPosition(){return this.player.position.clone().add(new THREE.Vector3(Math.sin(this.yaw)*5.8,1.7+Math.sin(this.pitch)*5.8,Math.cos(this.yaw)*5.8));}
+ cameraPosition(){return this.player.position.clone().add(new THREE.Vector3(Math.sin(this.yaw)*this.cameraDistance,1.7+Math.sin(this.pitch)*this.cameraDistance,Math.cos(this.yaw)*this.cameraDistance));}
 }
