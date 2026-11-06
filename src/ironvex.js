@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // existing vertices and textures; no replacement geometry is used for the hero.
 let cached;
 export function loadIronvex(onProgress=()=>{}) {
- if(!cached)cached=Promise.all([new GLTFLoader().loadAsync(import.meta.env.BASE_URL+'models/ironvex.glb',onProgress),fetch(import.meta.env.BASE_URL+'models/ironvex-skin.bin').then(r=>{if(!r.ok)throw new Error('Не загружена привязка модели');return r.arrayBuffer();})]).then(([gltf,weights])=>rigIronvex(gltf.scene,weights)).catch(error=>{cached=null;throw error;});
+ if(!cached)cached=Promise.all([new GLTFLoader().loadAsync(import.meta.env.BASE_URL+'public/models/ironvex.glb',onProgress),fetch(import.meta.env.BASE_URL+'public/models/ironvex-skin.bin').then(r=>{if(!r.ok)throw new Error('Не загружена привязка модели');return r.arrayBuffer();})]).then(([gltf,weights])=>rigIronvex(gltf.scene,weights)).catch(error=>{cached=null;throw error;});
  return cached;
 }
 const smooth=THREE.MathUtils.smoothstep;
