@@ -6,7 +6,7 @@ test('осмотр лица, поворот и полный рост досту�
  await expect(page.getByRole('button',{name:'Лицо',exact:true})).toBeVisible();
  await page.screenshot({path:'test-results/castiel-face.png'});
  await page.locator('#model-turn').fill('45');
- await page.getByRole('button',{name:'В полный рост'}).click();await page.screenshot({path:'test-results/castiel-body.png'});
+ await page.getByRole('button',{name:'В полный рост'}).click();await page.getByRole('button',{name:'Поза с референса'}).click();await expect(page.getByRole('button',{name:'Поза с референса'})).toHaveAttribute('aria-pressed','true');await page.screenshot({path:'test-results/castiel-body.png'});
  await page.getByRole('button',{name:'Вернуться в меню'}).click();await expect(page.getByRole('button',{name:/НАЧАТЬ ОХОТУ/})).toBeVisible();expect(errors).toEqual([]);
 });
 test('благодать выбирает только ближних демонов и испарение завершает распад',async({page})=>{

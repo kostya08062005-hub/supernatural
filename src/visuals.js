@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { sleeveGeometry, fitSleeve } from './tailoring.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -39,10 +40,8 @@ export function shadowWings(){
  root.userData.material=material;return root;
 }
 export function makeArm(coat,skin){const arm=new THREE.Group();
- const upper=new THREE.Mesh(new THREE.CapsuleGeometry(.087,.326,8,18),coat);
- const fore=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.35,8,18),coat);
- for(const sleeve of [upper,fore]){const v=sleeve.geometry.attributes.position;for(let i=0;i<v.count;i++){const y=v.getY(i),a=Math.atan2(v.getZ(i),v.getX(i)),fold=Math.sin(y*68+a*3)*.0025*Math.exp(-Math.pow((y+.14)/.09,2));v.setX(i,v.getX(i)+Math.cos(a)*fold);v.setZ(i,v.getZ(i)+Math.sin(a)*fold);}sleeve.geometry.computeVertexNormals();}
- const elbow=new THREE.Mesh(new THREE.SphereGeometry(.076,14,10),coat);
+ const upper=new THREE.Group(),fore=new THREE.Group(),elbow=new THREE.Group();
+ const sleeve=new THREE.Mesh(sleeveGeometry(),coat);arm.add(sleeve);
  const hand=new THREE.Group();const palm=new THREE.Mesh(new THREE.SphereGeometry(1,18,14),skin);palm.scale.set(.039,.054,.021);hand.add(palm);
  const nailMat=new THREE.MeshStandardMaterial({color:0xcba996,roughness:.52});
  for(let i=0;i<4;i++){const x=(i-1.5)*.021,length=[.078,.095,.089,.068][i];
@@ -53,13 +52,13 @@ export function makeArm(coat,skin){const arm=new THREE.Group();
  const cuff=new THREE.Mesh(new THREE.CylinderGeometry(.079,.076,.045,18),coat);cuff.position.y=-.21;fore.add(cuff);
  const buttons=new THREE.MeshStandardMaterial({color:0x382e25,roughness:.6});
  for(let i=0;i<3;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(.009,8,6),buttons);b.scale.z=.4;b.position.set(.056,-.14+i*.04,.069);fore.add(b);}
- arm.add(upper,fore,hand,elbow);arm.traverse(o=>{o.castShadow=true;o.receiveShadow=true;});arm.userData={upper,fore,hand,elbow};poseArm(arm,new THREE.Vector3(0,-.92,.03));return arm;
+ arm.add(upper,fore,hand,elbow);arm.traverse(o=>{o.castShadow=true;o.receiveShadow=true;});arm.userData={upper,fore,hand,elbow,sleeve};poseArm(arm,new THREE.Vector3(0,-.92,.03));return arm;
 }
-export function poseArm(arm,end){const {upper,fore,hand,elbow}=arm.userData;
+export function poseArm(arm,end){const {upper,fore,hand,elbow,sleeve}=arm.userData;
  const reach=end.clone();if(reach.length()>.95)reach.setLength(.95);
  const mid=reach.clone().multiplyScalar(.5);const bend=Math.sqrt(Math.max(0,.48**2-reach.lengthSq()/4));mid.z+=reach.y<-.6?bend*.35:-bend;
  const segment=(o,a,b)=>{o.position.copy(a).add(b).multiplyScalar(.5);o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());o.scale.y=a.distanceTo(b)/.5;};
- if(elbow)elbow.position.copy(mid);segment(upper,new THREE.Vector3(),mid);segment(fore,mid,reach);hand.position.copy(reach);hand.rotation.x=reach.y>0?-Math.PI/2:0;
+ if(elbow)elbow.position.copy(mid);segment(upper,new THREE.Vector3(),mid);segment(fore,mid,reach);hand.position.copy(reach);hand.rotation.x=reach.y>0?-Math.PI/2:0;if(sleeve)fitSleeve(sleeve.geometry,mid,reach);
 }
 
 export function dressWorld(world){
